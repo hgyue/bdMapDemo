@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+	<title></title>
+	<style type="text/css">  
+    	html{height:100%}    
+    	body{height:100%;margin:0px;padding:0px}    
+    	#container{height:100%}    
+	</style> 
+</head>
+<body>
+	<div id="container"></div>
+
+	<script type="text/javascript" src="http://api.map.baidu.com/api?v=3.0&ak=获取的百度ak"></script>
+	<script type="text/javascript">
+
+		// 构建百度地图对象
+		var map = new BMap.Map("container");
+		// 设置中心坐标
+		var point = new BMap.Point(104.121137, 30.710524); 
+		// 设置地图级别
+		map.centerAndZoom(point, 15);
+		// 开启缩放
+		map.enableScrollWheelZoom(true);
+
+		// 添加控件 ---- 平移缩放控件：切换地图级别和平移地图，默认在左上角
+		map.addControl(new BMap.NavigationControl());
+		// 添加控件 ---- 比例尺：显示当前地图和真实距离比例，，默认在左下角
+		map.addControl(new BMap.ScaleControl());
+		// 添加控件 ---- 缩略图：可折叠的缩略地图，默认折叠，默认在右下角
+		map.addControl(new BMap.OverviewMapControl());
+		// 添加控件 ---- 地图类型：可以展示地图、卫星、三维模式，必须设置城市名才生效，默认右上角
+		map.addControl(new BMap.MapTypeControl());
+		map.setCurrentCity("成都");
+
+		// 个性化设置地图模板（主题颜色风格，比如夜晚就是偏黑色系），也可使用“个性地图编辑工具”
+		map.setMapStyle({style:'dark'});
+
+		// 标注 ---- 点标注：在设置的坐标上面显示小红点，突出显示，可以设置多个点标注
+		map.addOverlay(new BMap.Marker(point));
+		var point2 = new BMap.Point(104.134773,30.719666);
+		map.addOverlay(new BMap.Marker(point2));
+		// 标注 ---- 折线标注：几个点之间的连接，是直线连接（举例我家和我姐家这两点）
+		var polyline = new BMap.Polyline(
+			[new BMap.Point(104.134773, 30.719666),
+		    new BMap.Point(104.121137, 30.710524)],
+		    {strokeColor:"blue", strokeWeight:6, strokeOpacity:0.5}
+		);
+		map.addOverlay(polyline);
+
+		// 事件 ---- 点击：点击地图触发（除了控件区域的所有位置）
+		map.addEventListener("click", function(){    
+		    alert("您点击了地图。");    
+		});
+		// 事件 ---- 点击：点击标注触发，需要把标出添加到地图才生效
+		// 1 需要创建标注的坐标（举例成都动物园）
+		var marker = new BMap.Marker(new BMap.Point(104.112577,30.715819));
+		// 2 添加到地图
+		map.addOverlay(marker);
+		// 3 添加点击事件（因为事件冒泡，会同时触发标注和地图的点击事件）
+		marker.addEventListener("click", function(){    
+		    alert("您点击了动物园标注");    
+		});
+		// 事件 ---- 拖拽标注，流程和标注事件类似，先创建标注，再添加到地图，添加事件，举例上面的动物园标注
+		// 1 开启标注拖拽
+		marker.enableDragging();
+		// 2，添加事件
+		marker.addEventListener("dragend", function(e){    
+		    alert("当前位置：" + e.point.lng + ", " + e.point.lat);    
+		});
+
+		// 信息窗口，在中心坐标上面显示一个文本框，文本框里是自定义文本，举例动物园标注
+		// 1 设置文本框样式
+		var opts = {    
+		    width : 150,     // 信息窗口宽度    
+		    height: 50,     // 信息窗口高度    
+		    title : "成都动物园"  // 信息窗口标题   
+		};
+		// 2 设置消息文本
+		var infoWindow = new BMap.InfoWindow("成都动物园一点都不好玩，因为去过很多次了", opts);  // 创建信息窗口对象    
+		map.openInfoWindow(infoWindow, map.getCenter());      // 打开信息窗口
+
+		// poi 检索 ---- 检出出的地方使用小红点标注出来，不带结果面板
+		var local = new BMap.LocalSearch(map, {      
+		    renderOptions:{map: map}      
+		});
+		// 检索 昭觉市 周围的感兴趣点（周围比较热闹、出名等）
+		local.search("昭觉市");
+		// 检索 昭觉市 附近小吃
+		local.searchNearby("小吃", "昭觉市");
+		// 当前地图可视区域检索 银行
+		local.searchInBounds("银行", map.getBounds());
+
+		// 地址解析，把地名转化成坐标（经纬度）
+		// 1，创建地址解析器实例     
+		var myGeo = new BMap.Geocoder(); 
+		// 2，解析，结果是个对象：{lng: 104.112706, lat: 30.7158}
+		myGeo.getPoint("成都动物园", function(point){
+			if(point){
+				console.log(point);
+			}else{
+				alert("没有对应的地名");
+			}
+		})
+		// 逆地址解析，通过坐标转成地名
+		myGeo.getLocation(new BMap.Point(104.121137, 30.710524), function(result){      
+		    if (result){      
+		    	alert(result.address);      
+		    }      
+		});
+
+		/* 下面两种没有显示，不知道为什么，可能哪里有问题吧 */
+		// 路线规划 ---- 驾车
+		var driving = new BMap.DrivingRoute(map, {    
+		    renderOptions: {    
+		        map: map,    
+		        autoViewport: true    
+		    }    
+		});    
+		driving.search("东林景忆", "新山社区");
+		// poi 检索 ---- 带结果面板，添加 panel 属性；把检索结果放进一个容器进行展示（比上面）
+		var local2 = new BMap.LocalSearch(map,   
+            {renderOptions: {map: map,panel: "results"}});      
+		local2.search("昭觉市");
+	</script>
+</body>
+</html>
